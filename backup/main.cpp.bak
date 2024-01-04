@@ -1,0 +1,134 @@
+#include "main.h"
+
+#include <Arduino.h>
+#include <WiFi.h>
+#include <stdio.h>
+
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <string>
+
+struct WifiConf {
+    std::string SSID;
+    std::string PWD;
+};
+
+WifiConf wifi_creds[6] = {
+    {"GenerativeAI_5G", "Blackbox3.1415"},
+    {"GenerativeAI", "Blackbox3.1415"},
+    {"Rheza Wifi Biasa", "kontolnjepat69"},
+    {"Rheza Wifi Biasa_5G", "kontolnjepat69"},
+    {"TK 01 Biznet 5G", "11001101001101"},
+    {"TK 01 Biznet", "kontolkugedebanget"},
+};
+
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Setting up...");
+
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+    networksScanAndConnenct();
+    delay(100);
+
+    Serial.println("Setup done.");
+}
+
+void networksScanAndConnenct() {
+    size_t n;
+    int *nets_found = netsScanAndFind(wifi_creds, 6, &n);
+    Serial.println(n);
+    Serial.println("-----");
+    for (size_t i = 0; i < n; i++) {
+        Serial.println(nets_found[i]);
+    }
+    heap_caps_free(nets_found);
+}
+
+int *netsScanAndFind(struct WifiConf *wiconf, size_t conf_size, size_t *n_nets_found) {
+    Serial.println("Scanning network...");
+    int nets_num = WiFi.scanNetworks();
+
+    *n_nets_found = 0;
+    // int *nets_found = (int *)malloc(1 * sizeof(int));
+    int *nets_found = (int *)heap_caps_malloc(1 * sizeof(int), MALLOC_CAP_DEFAULT);
+
+    if (nets_found == NULL) {
+        Serial.println("[ERROR] Memory allocation failed.");
+        exit(EXIT_FAILURE);
+        return NULL;
+    }
+
+    if (nets_num == 0) {
+        Serial.println("No networks found");
+    } else {
+        Serial.printf("%d network found\n", nets_num);
+        Serial.println("Nr | SSID \t\t\t| RSSI | CH | Encryption");
+
+        for (size_t i = 0; i < nets_num; i++) {
+            std::string found_ssid = WiFi.SSID(i).c_str();
+
+            for (size_t j = 0; j < conf_size; j++) {
+                if (strcmp(found_ssid.c_str(), wiconf[j].SSID.c_str()) == 0) {
+                    Serial.println("We found some!");
+                    // nets_found = (int *)realloc(nets_found, 1 * sizeof(int));
+                    nets_found = (int *)heap_caps_realloc(nets_found, 1 * sizeof(int), MALLOC_CAP_DEFAULT);
+
+                    nets_found[*n_nets_found] = j;
+                    *n_nets_found += 1;
+                }
+            }
+
+            Serial.printf("%2d", i + 1);
+            Serial.print(" | ");
+            Serial.printf("%-32.32s", WiFi.SSID(i).c_str());
+            Serial.print(" | ");
+            Serial.printf("%4d", WiFi.RSSI(i));
+            Serial.print(" | ");
+            Serial.printf("%2d", WiFi.channel(i));
+            Serial.print(" | ");
+            switch (WiFi.encryptionType(i)) {
+                case WIFI_AUTH_OPEN:
+                    Serial.print("open");
+                    break;
+                case WIFI_AUTH_WEP:
+                    Serial.print("WEP");
+                    break;
+                case WIFI_AUTH_WPA_PSK:
+                    Serial.print("WPA");
+                    break;
+                case WIFI_AUTH_WPA2_PSK:
+                    Serial.print("WPA2");
+                    break;
+                case WIFI_AUTH_WPA_WPA2_PSK:
+                    Serial.print("WPA+WPA2");
+                    break;
+                case WIFI_AUTH_WPA2_ENTERPRISE:
+                    Serial.print("WPA2-EAP");
+                    break;
+                case WIFI_AUTH_WPA3_PSK:
+                    Serial.print("WPA3");
+                    break;
+                case WIFI_AUTH_WPA2_WPA3_PSK:
+                    Serial.print("WPA2+WPA3");
+                    break;
+                case WIFI_AUTH_WAPI_PSK:
+                    Serial.print("WAPI");
+                    break;
+                default:
+                    Serial.print("unknown");
+            }
+            Serial.println();
+            delay(10);
+        }
+    }
+    Serial.println("");
+
+    WiFi.scanDelete();
+
+    return nets_found;
+}
+
+void loop() {
+}
