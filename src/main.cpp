@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <DHT.h>
+#include <MQUnifiedsensor.h>
 #include <WiFi.h>
 #include <stdio.h>
 
@@ -9,10 +10,12 @@
 
 // DHT22 Sensor Configuration
 DHT_Unified dht(DHT_SENSOR_PIN, DHTTYPE);
-uint32_t DHTSensordelayMS;
+unsigned long sensorDelayMs;
 // DS18B20 Sensor Configuration
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature ds18b20TempSensor(&oneWire);
+// MQ3 Alcohol Sensor Configuration
+MQUnifiedsensor MQ3(BOARD, VOLTAGE_RESOLUTION, ADC_BIT_RESOLUTION, MQ3_SENSOR_PIN, "MQ-3");
 
 BLYNK_WRITE(V0) {
 }
@@ -53,49 +56,49 @@ bool beginBlynkWithWifiConnection() {
 void setupHumidityAndTemperaturSensor() {
     // Initialize device.
     dht.begin();
-    Serial.println(F("========== DHT22 Unified Sensor Information ============="));
+    Serial.println("========== DHT22 Sensor =============");
     // Print temperature sensor details.
     sensor_t sensor;
     dht.temperature().getSensor(&sensor);
-    Serial.println(F("------------------------------------"));
-    Serial.println(F("Temperature Sensor"));
-    Serial.print(F("Sensor Type: "));
+    Serial.println("------------------------------------");
+    Serial.println("Temperature Sensor");
+    Serial.print("Sensor Type: ");
     Serial.println(sensor.name);
-    Serial.print(F("Driver Ver:  "));
+    Serial.print("Driver Ver:  ");
     Serial.println(sensor.version);
-    Serial.print(F("Unique ID:   "));
+    Serial.print("Unique ID:   ");
     Serial.println(sensor.sensor_id);
-    Serial.print(F("Max Value:   "));
+    Serial.print("Max Value:   ");
     Serial.print(sensor.max_value);
-    Serial.println(F("°C"));
-    Serial.print(F("Min Value:   "));
+    Serial.println("°C");
+    Serial.print("Min Value:   ");
     Serial.print(sensor.min_value);
-    Serial.println(F("°C"));
-    Serial.print(F("Resolution:  "));
+    Serial.println("°C");
+    Serial.print("Resolution:  ");
     Serial.print(sensor.resolution);
-    Serial.println(F("°C"));
-    Serial.println(F("------------------------------------"));
+    Serial.println("°C");
+    Serial.println("------------------------------------");
     // Print humidity sensor details.
     dht.humidity().getSensor(&sensor);
-    Serial.println(F("Humidity Sensor"));
-    Serial.print(F("Sensor Type: "));
+    Serial.println("Humidity Sensor");
+    Serial.print("Sensor Type: ");
     Serial.println(sensor.name);
-    Serial.print(F("Driver Ver:  "));
+    Serial.print("Driver Ver:  ");
     Serial.println(sensor.version);
-    Serial.print(F("Unique ID:   "));
+    Serial.print("Unique ID:   ");
     Serial.println(sensor.sensor_id);
-    Serial.print(F("Max Value:   "));
+    Serial.print("Max Value:   ");
     Serial.print(sensor.max_value);
-    Serial.println(F("%"));
-    Serial.print(F("Min Value:   "));
+    Serial.println("%");
+    Serial.print("Min Value:   ");
     Serial.print(sensor.min_value);
-    Serial.println(F("%"));
-    Serial.print(F("Resolution:  "));
+    Serial.println("%");
+    Serial.print("Resolution:  ");
     Serial.print(sensor.resolution);
-    Serial.println(F("%"));
-    Serial.println(F("------------------------------------"));
+    Serial.println("%");
+    Serial.println("------------------------------------");
     // Set delay between sensor readings based on sensor details.
-    DHTSensordelayMS = sensor.min_delay / 1000;
+    sensorDelayMs = sensor.min_delay / 1000;
 }
 void humidtyAndTemperatureReader(DHTSensorOutput *out) {
     // Get sensor event and print its value.
@@ -121,25 +124,82 @@ float ds18b20TempSensorReader() {
     return temp_c;
 }
 
-float alcoholSensorReader() {
-    uint16_t analog_val = analogRead(MQ3_SENSOR_PIN);
+void setupAlcoholSensor() {
+    Serial.println("========== MQ3 Sensor =============");
+
+    // Set math model to calculate the PPM concentration and the value of constants
+    MQ3.setRegressionMethod(1);  // _PPM = a*ratio^b
+    // Configure the equation to calculate Alcohol concentration value
+    /*
+     * Exponential regression:
+     * Gas    | a      | b
+     * H2     | 987.99 | -2.162
+     * LPG    | 574.25 | -2.222
+     * CO     | 36974  | -3.109
+     * Alcohol| 3616.1 | -2.675
+     * Propane| 658.71 | -2.168
+     */
+    MQ3.setA(3616.1);
+    MQ3.setB(-2.675);
+
+    MQ3.init();
+
+    // Explanation:
+    // In this routine the sensor will measure the resistance of the sensor supposedly before being pre-heated
+    // and on clean air (Calibration conditions), setting up R0 value.
+    // We recomend executing this routine only on setup in laboratory conditions.
+    // This routine does not need to be executed on each restart, you can load your R0 value from eeprom.
+    // Acknowledgements: https://jayconsystems.com/blog/understanding-a-gas-sensor
+    Serial.print("Calibrating MQ3.");
+    float calcR0 = 0;
+    for (size_t i = 0; i < 10; i++) {
+        MQ3.update();
+        calcR0 += MQ3.calibrate(RatioMQ3CleanAir);
+        Serial.print(".");
+    }
+    MQ3.setR0(calcR0 / 10);
+    Serial.println("");
+    Serial.println("Calibrating Done.");
+
+    if (isinf(calcR0)) {
+        Serial.println("[WARNING]: Connection issue, R0 is inifinite (Open circuit detected), please check your wiring and supply");
+        while (1)
+            ;
+    }
+    if (calcR0 == 0) {
+        Serial.println("[WARNING]: Connection issue found, R0 is zero (Analog pin shorts to ground), please check your wiring and supply");
+    }
+
+    // MQ3.serialDebug(true);  // Uncomment if you want to print the table on the serial port
 }
 
-void sensorDataSend() {
+float alcoholSensorReader() {
+    MQ3.update();  // Update data, board will read the voltage from the defined analog pin
+    float alcohol_ppm = MQ3.readSensor();
+    // MQ3.serialDebug();
+    return alcohol_ppm;
+}
+
+void sensorDataSend(bool debug_serial) {
     DHTSensorOutput dht_sensor_out;
     humidtyAndTemperatureReader(&dht_sensor_out);
     float temp = ds18b20TempSensorReader();
+    float alc_ppm = alcoholSensorReader();
 
-    Serial.println("------------------------------------");
-    Serial.printf("| REL HUMIDITY           | %.3f  %c |\n", dht_sensor_out.relative_humidity, '%');
-    Serial.printf("| AMBIENT TEMPERATURE    | %.3f °C |\n", dht_sensor_out.temperature);
-    Serial.printf("| TEMPERATURE            | %.3f °C |\n", temp, '%');
-    Serial.println("------------------------------------");
+    if (debug_serial) {
+        Serial.println("------------------------------------");
+        Serial.printf("| REL HUMIDITY           | %.3f  %c  |\n", dht_sensor_out.relative_humidity, '%');
+        Serial.printf("| AMBIENT TEMPERATURE    | %.3f °C   |\n", dht_sensor_out.temperature);
+        Serial.printf("| TEMPERATURE            | %.3f °C   |\n", temp, '%');
+        Serial.printf("| ALCOHOL                | %.3f PPM  |\n", alc_ppm);
+        Serial.println("------------------------------------");
+    }
 
     Blynk.beginGroup();
     Blynk.virtualWrite(V0, dht_sensor_out.relative_humidity);
     Blynk.virtualWrite(V1, dht_sensor_out.temperature);
     Blynk.virtualWrite(V2, temp);
+    Blynk.virtualWrite(V3, alc_ppm);
     Blynk.endGroup();
 }
 
@@ -149,6 +209,7 @@ void setup() {
     pinMode(LED_PIN, OUTPUT);        // Digital
     pinMode(MQ3_SENSOR_PIN, INPUT);  // Analog
     setupHumidityAndTemperaturSensor();
+    setupAlcoholSensor();
     ds18b20TempSensor.begin();
     delay(100);
 
@@ -157,8 +218,14 @@ void setup() {
         Serial.println("[ERROR]: Failed to connect to WiFi");
     }
 
-    blynkTimer.setInterval((long)DHTSensordelayMS, sensorDataSend);
-
+    blynkTimer.setInterval(sensorDelayMs, []() {
+        blynkTimer.setTimeout(sensorDelayMs / 2, []() {
+            digitalWrite(LED_PIN, LOW);
+        });
+        sensorDataSend(true);
+        digitalWrite(LED_PIN, HIGH);
+    });
+    Serial.printf("Sensor reading and data exchange to the server is carried out every %lu milliseconds", sensorDelayMs);
     Serial.println("\nSetup done.");
 }
 

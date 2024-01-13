@@ -19,7 +19,11 @@
 
 #include <string>
 // ################ UTILITIES #######################
+#define BOARD "ESP-32"
 #define LED_PIN 5
+
+#define VOLTAGE_RESOLUTION 3.3
+#define ADC_BIT_RESOLUTION 12
 // ################# BLYNK ##########################
 BlynkTimer blynkTimer;
 
@@ -40,6 +44,7 @@ struct DHTSensorOutput {
 #define ONE_WIRE_BUS 2
 // ------- MQ3 Alcohol Sensor -------------
 #define MQ3_SENSOR_PIN A3
+#define RatioMQ3CleanAir 9.83  // RS / R0 = 9.83 ppm
 
 // ============= Networks =================
 // ------------- WiFi ---------------------
@@ -47,13 +52,14 @@ bool beginBlynkWithWifiConnection();
 // ########################################
 
 // ============= SENSOR ===================
-void sensorDataSend();
+void sensorDataSend(bool debug_serial);
 // -------------- DHT 22 ------------------
 void setupHumidityAndTemperaturSensor();
 void humidtyAndTemperatureReader(DHTSensorOutput *out);
 // ----- DS18B20 Temperature Sensor -------
 float ds18b20TempSensorReader();
 // ------- MQ3 Alcohol Sensor -------------
+void setupAlcoholSensor();
 float alcoholSensorReader();
 
 #endif
