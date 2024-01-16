@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <stdio.h>
 
+#include "actuator.h"
 #include "network.h"
 
 // DHT22 Sensor Configuration
@@ -17,7 +18,11 @@ DallasTemperature ds18b20TempSensor(&oneWire);
 // MQ3 Alcohol Sensor Configuration
 MQUnifiedsensor MQ3(BOARD, VOLTAGE_RESOLUTION, ADC_BIT_RESOLUTION, MQ3_SENSOR_PIN, "MQ-3");
 
-BLYNK_WRITE(V0) {
+BLYNK_WRITE(V4) {
+    int val = param.asInt();
+    bool bval = (bool)val;
+    enableMotor(bval, bval);
+    Serial.printf("Motor Switch changed: %s\n", ((bval) ? "On" : "Off"));
 }
 
 BLYNK_CONNECTED() {
@@ -126,6 +131,7 @@ float ds18b20TempSensorReader() {
 
 void setupAlcoholSensor() {
     Serial.println("========== MQ3 Sensor =============");
+    pinMode(MQ3_SENSOR_PIN, INPUT);  // Analog
 
     // Set math model to calculate the PPM concentration and the value of constants
     MQ3.setRegressionMethod(1);  // _PPM = a*ratio^b
@@ -206,10 +212,10 @@ void sensorDataSend(bool debug_serial) {
 void setup() {
     Serial.begin(115200);
     Serial.println("Setting up...");
-    pinMode(LED_PIN, OUTPUT);        // Digital
-    pinMode(MQ3_SENSOR_PIN, INPUT);  // Analog
+    pinMode(LED_PIN, OUTPUT);  // Digital
     setupHumidityAndTemperaturSensor();
     setupAlcoholSensor();
+    setupMotorDriver();
     ds18b20TempSensor.begin();
     delay(100);
 
@@ -225,6 +231,11 @@ void setup() {
         sensorDataSend(true);
         digitalWrite(LED_PIN, HIGH);
     });
+
+    blynkTimer.setInterval(5, []() {
+        runMotor(CW, 255);
+    });
+
     Serial.printf("Sensor reading and data exchange to the server is carried out every %lu milliseconds", sensorDelayMs);
     Serial.println("\nSetup done.");
 }
