@@ -11,6 +11,8 @@ void setupMotorDriver() {
 
     pinMode(MOTOR_LEN_PIN, OUTPUT);
     pinMode(MOTOR_REN_PIN, OUTPUT);
+    pinMode(MOTOR_POWER_SWITCH_PIN, OUTPUT);
+    digitalWrite(MOTOR_POWER_SWITCH_PIN, HIGH);
 }
 
 void enableMotor(bool cw, bool ccw) {

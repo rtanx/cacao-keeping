@@ -9,11 +9,11 @@ WifiConf *connected_net = nullptr;
 WifiConf wifi_creds[7] = {
     {"HiggsBoson_5G", "Blackbox3.1415"},
     {"HiggsBoson", "Blackbox3.1415"},
+    {"iPhone 14", "kontolkuda256"},
     {"Rheza Wifi Biasa", "kontolnjepat69"},
     {"Rheza Wifi Biasa_5G", "kontolnjepat69"},
     {"TK 01 Biznet 5G", "11001101001101"},
     {"TK 01 Biznet", "kontolkugedebanget"},
-    {"GenerativeAI", "Blackbox3.1415"},
 };
 
 // DEPRECATED

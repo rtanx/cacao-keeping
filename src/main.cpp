@@ -139,16 +139,18 @@ void setupAlcoholSensor() {
     /*
      * Exponential regression:
      * Gas    | a      | b
-     * H2     | 987.99 | -2.162
-     * LPG    | 574.25 | -2.222
-     * CO     | 36974  | -3.109
-     * Alcohol| 3616.1 | -2.675
-     * Propane| 658.71 | -2.168
+     * LPG    | 44771  | -3.245
+     * CH4    | 2*10^31| 19.01
+     * CO     | 521853 | -3.821
+     * Alcohol| 0.3934 | -1.504
+     * Benzene| 4.8387 | -2.68
+     * Hexane | 7585.3 | -2.849
      */
-    MQ3.setA(3616.1);
-    MQ3.setB(-2.675);
+    MQ3.setA(0.3934);
+    MQ3.setB(-1.504);
 
     MQ3.init();
+    MQ3.setRL(200);
 
     // Explanation:
     // In this routine the sensor will measure the resistance of the sensor supposedly before being pre-heated
@@ -163,7 +165,10 @@ void setupAlcoholSensor() {
         calcR0 += MQ3.calibrate(RatioMQ3CleanAir);
         Serial.print(".");
     }
+    Serial.print("R0 = ");
+    Serial.println(calcR0);
     MQ3.setR0(calcR0 / 10);
+
     Serial.println("");
     Serial.println("Calibrating Done.");
 

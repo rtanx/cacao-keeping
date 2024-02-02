@@ -20,7 +20,7 @@
 #include <string>
 // ################ UTILITIES #######################
 #define BOARD "ESP-32"
-#define LED_PIN 5
+#define LED_PIN GPIO_NUM_23
 
 #define VOLTAGE_RESOLUTION 3.3
 #define ADC_BIT_RESOLUTION 12
@@ -34,7 +34,7 @@ BLYNK_CONNECTED();
 
 // ============= SENSOR ===================
 // -------------- DHT22 -------------------
-#define DHT_SENSOR_PIN 4
+#define DHT_SENSOR_PIN GPIO_NUM_4
 #define DHTTYPE DHT22
 struct DHTSensorOutput {
     float relative_humidity;
@@ -44,7 +44,7 @@ struct DHTSensorOutput {
 #define ONE_WIRE_BUS 2
 // ------- MQ3 Alcohol Sensor -------------
 #define MQ3_SENSOR_PIN A3
-#define RatioMQ3CleanAir 9.83  // RS / R0 = 9.83 ppm
+#define RatioMQ3CleanAir 60  // RS / R0 = 60 ppm
 
 // ============= Networks =================
 // ------------- WiFi ---------------------
