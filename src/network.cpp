@@ -3,17 +3,21 @@
 #include <WiFi.h>
 #include <string.h>
 
+#include <nlohmann/json.hpp>
+
 using namespace std;
 
 WifiConf *connected_net = nullptr;
+
 WifiConf wifi_creds[7] = {
+    // Initial wifi configuration (wifi credentials here just for local run purpose)
     {"HiggsBoson_5G", "Blackbox3.1415"},
     {"HiggsBoson", "Blackbox3.1415"},
-    {"iPhone 14", "kontolkuda256"},
-    {"vivo 19", "hesoyam12"},
-    {"KAKAO IBRA", "20031988"},
-    {"MUHGHAZIAL", "cendana*12#"},
-    {"TK 01 Biznet", "kontolkugedebanget"},
+    {"dummy", "dummy"},
+    {"dummy1", "dummy1"},
+    {"dummy2", "dummy3"},
+    {"dummy3", "dummy3"},
+    {"dummy4", "dummy4"},
 };
 
 // DEPRECATED

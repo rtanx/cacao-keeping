@@ -1,9 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define BLYNK_TEMPLATE_ID "TMPL6-Xb99ELJ"
-#define BLYNK_TEMPLATE_NAME "CacaoKeeping"
-#define BLYNK_AUTH_TOKEN "Q7KsDFOV89IgQ0zd5rmZyeh3o3nSQRxN"
+#include "secret.h"
 
 #define BLYNK_PRINT Serial
 
