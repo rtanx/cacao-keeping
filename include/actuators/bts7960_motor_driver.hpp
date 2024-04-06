@@ -6,6 +6,7 @@
 namespace actuators {
 class BTS7960MotorDriver {
    private:
+    uint8_t power_signal_pin;
     uint8_t lpwm_pin;
     uint8_t rpwm_pin;
     uint8_t len_pin;
@@ -21,6 +22,7 @@ class BTS7960MotorDriver {
     bool r_enable = false;
     uint max_duty_cycle;
     uint speed = 0;
+    bool is_running = false;
 
     /**
      * @brief Turn motor to given direction
@@ -38,6 +40,7 @@ class BTS7960MotorDriver {
                        uint8_t rpwm_pin,
                        uint8_t len_pin,
                        uint8_t ren_pin,
+                       uint8_t power_signal_pin,
                        uint8_t l_channel = 15,
                        uint8_t r_channel = 14,
                        unsigned int frequency = 1000,
@@ -45,6 +48,7 @@ class BTS7960MotorDriver {
     ~BTS7960MotorDriver();
 
     void begin();
+    void startPower();
     void enableCW();
     void disableCW();
     void enableCCW();
@@ -53,7 +57,9 @@ class BTS7960MotorDriver {
     bool isCCWEnable();
     void turnCW(bool force = false);
     void turnCCW(bool force = false);
+    void stop();
     void setSpeed(uint s);
+    bool isRunning();
 };
 
 }  // namespace actuators

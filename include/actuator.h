@@ -14,12 +14,4 @@
 #define MOTOR_FREQUENCY 1000
 #define MOTOR_RESOLUTION 8
 
-enum MotorDirection {
-    CW,
-    CCW
-};
-
-void setupMotorDriver();
-void runMotor(enum MotorDirection dir, uint8_t speed);
-void enableMotor(bool cw, bool ccw);
 #endif

@@ -2,6 +2,7 @@
 #define NETWORK_H
 
 #include <WiFi.h>
+#include <WiFiClient.h>
 
 #include <string>
 
